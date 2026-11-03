@@ -1,0 +1,111 @@
+name: SleepToggle
+options:
+  bundleIdPrefix: com.llcheesell
+  deploymentTarget:
+    macOS: "26.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    DEVELOPMENT_TEAM: KCA45GR99A
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: "Developer ID Application"
+    ENABLE_HARDENED_RUNTIME: YES
+    # 公証はセキュアタイムスタンプを要求する。xcodebuild は既定で付けない。
+    OTHER_CODE_SIGN_FLAGS: "--timestamp"
+    # Xcode は既定で get-task-allow（デバッグ用）を注入する。
+    # これが入っていると公証が Invalid で弾かれる。
+    CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.1.0"
+
+targets:
+  # Control Center コントロール。App Sandbox 必須。
+  SleepToggleControl:
+    type: app-extension
+    platform: macOS
+    sources:
+      - Sources/Control
+      - Sources/Shared
+      - path: Resources/Symbols.xcassets
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.llcheesell.SleepToggle.Control
+        INFOPLIST_FILE: Sources/Control/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Sources/Control/Control.entitlements
+        SKIP_INSTALL: YES
+
+  # root LaunchDaemon。ここだけが pmset を実行する。
+  SleepToggleHelper:
+    type: tool
+    platform: macOS
+    sources:
+      - Sources/Helper
+      - Sources/Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.llcheesell.SleepToggle.helper
+        SKIP_INSTALL: YES
+        # tool ターゲットには base の設定が効かないため個別に指定する。
+        CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
+        # tool は PRODUCT_BUNDLE_IDENTIFIER ではなく製品名を署名 identifier に使う。
+        # XPC の署名要件が identifier で照合するため明示する必要がある。
+        OTHER_CODE_SIGN_FLAGS: "--timestamp -i com.llcheesell.SleepToggle.helper"
+
+  # フタ監視 LaunchAgent。音はユーザセッションでしか鳴らせない。
+  SleepToggleWatcher:
+    type: tool
+    platform: macOS
+    sources:
+      - Sources/Watcher
+      - Sources/Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.llcheesell.SleepToggle.watcher
+        SKIP_INSTALL: YES
+        # tool ターゲットには base の設定が効かないため個別に指定する。
+        CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
+        # tool は PRODUCT_BUNDLE_IDENTIFIER ではなく製品名を署名 identifier に使う。
+        # XPC の署名要件が identifier で照合するため明示する必要がある。
+        OTHER_CODE_SIGN_FLAGS: "--timestamp -i com.llcheesell.SleepToggle.watcher"
+
+  SleepToggle:
+    type: application
+    platform: macOS
+    sources:
+      - Sources/App
+      - Sources/Shared
+      # xcodegen に `resources:` キーは無く、書いても黙って無視される。
+      # 書き間違えるとリソースが App に入らないので注意。
+      - path: Resources/Symbols.xcassets
+      - path: Resources/AppIcon.icns
+        buildPhase: resources
+      - path: Resources/LidWarning.wav
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.llcheesell.SleepToggle
+        INFOPLIST_FILE: Sources/App/Info.plist
+    dependencies:
+      - target: SleepToggleControl
+        embed: true
+        codeSign: true
+      - target: SleepToggleHelper
+        embed: true
+        codeSign: true
+        copy:
+          destination: executables
+      - target: SleepToggleWatcher
+        embed: true
+        codeSign: true
+        copy:
+          destination: executables
+    postBuildScripts:
+      - name: launchd plist を配置
+        # SMAppService は App バンドル相対の決まった場所を読む。
+        script: |
+          set -euo pipefail
+          APP="$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH"
+          mkdir -p "$APP/Library/LaunchDaemons" "$APP/Library/LaunchAgents"
+          cp "$SRCROOT/Resources/com.llcheesell.SleepToggle.helper.plist" "$APP/Library/LaunchDaemons/"
+          cp "$SRCROOT/Resources/com.llcheesell.SleepToggle.watcher.plist" "$APP/Library/LaunchAgents/"

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- App 拡張はサンドボックス必須。 -->
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+
+	<!-- サンドボックス下から特権ヘルパの Mach サービスを引くための例外。
+	     これが無いと NSXPCConnection の名前解決が拒否される。 -->
+	<key>com.apple.security.temporary-exception.mach-lookup.global-name</key>
+	<array>
+		<string>com.llcheesell.SleepToggle.helper</string>
+	</array>
+</dict>
+</plist>

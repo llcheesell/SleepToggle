@@ -1,0 +1,85 @@
+#!/bin/bash
+#
+# sleeptoggle — MacBook のフタを閉じてもスリープしない状態をトグルする
+#
+#   sleeptoggle           状態を反転
+#   sleeptoggle on        スリープ無効（クラムシェル運用）
+#   sleeptoggle off       通常に戻す
+#   sleeptoggle status    現在の状態を表示（root 不要）
+#
+# `pmset -a disablesleep` は root 権限を要求するため、事前に
+# scripts/install-sudoers.sh でパスワード免除を入れておくこと。
+#
+set -euo pipefail
+
+PMSET=/usr/bin/pmset
+
+# 現在の SleepDisabled を返す（0=通常 / 1=スリープ無効）。読み取りは root 不要。
+current_state() {
+  "$PMSET" -g | awk '/SleepDisabled/ { print $2; found = 1 } END { if (!found) print 0 }'
+}
+
+on_ac_power() {
+  case "$("$PMSET" -g batt)" in
+    *"AC Power"*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+notify() {
+  /usr/bin/osascript -e "display notification \"$2\" with title \"$1\"" >/dev/null 2>&1 || true
+}
+
+describe() {
+  if [ "$1" = 1 ]; then
+    echo "ON — フタを閉じてもスリープしません"
+  else
+    echo "OFF — 通常どおりスリープします"
+  fi
+}
+
+cmd=${1:-toggle}
+cur=$(current_state)
+
+case "$cmd" in
+  status)
+    describe "$cur"
+    exit 0
+    ;;
+  on)     want=1 ;;
+  off)    want=0 ;;
+  toggle) want=$((1 - cur)) ;;
+  *)
+    echo "usage: ${0##*/} [toggle|on|off|status]" >&2
+    exit 64
+    ;;
+esac
+
+if [ "$want" = "$cur" ]; then
+  describe "$cur"
+  exit 0
+fi
+
+# sudoers.d/sleeptoggle で、この 2 通りの呼び出しだけが NOPASSWD 許可されている。
+if ! sudo -n "$PMSET" -a disablesleep "$want" 2>/dev/null; then
+  notify "Sleep Toggle" "権限がありません。install-sudoers.sh を実行してください"
+  echo "error: sudo -n が拒否されました。scripts/install-sudoers.sh を実行してください。" >&2
+  exit 77
+fi
+
+# pmset は権限まわりで失敗しても終了コード 0 を返すことがあるため、読み直して確認する。
+new=$(current_state)
+if [ "$new" != "$want" ]; then
+  echo "error: 反映されませんでした（期待 $want / 実際 $new）" >&2
+  exit 1
+fi
+
+msg=$(describe "$new")
+
+# ON のままバッテリー駆動でカバンに入れると本体が発熱し続けるため、必ず警告する。
+if [ "$new" = 1 ] && ! on_ac_power; then
+  msg="$msg ⚠️ バッテリー駆動中です"
+fi
+
+notify "Sleep Toggle" "$msg"
+echo "$msg"

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.llcheesell.SleepToggle.helper</string>
+
+	<!-- App バンドルからの相対パス。SMAppService はこの形式を要求する。 -->
+	<key>BundleProgram</key>
+	<string>Contents/MacOS/SleepToggleHelper</string>
+
+	<!-- Shared の sleepToggleMachServiceName と一致させること。 -->
+	<key>MachServices</key>
+	<dict>
+		<key>com.llcheesell.SleepToggle.helper</key>
+		<true/>
+	</dict>
+
+	<!-- System設定 > 一般 > ログイン項目 でこの App の項目としてまとめて表示される。 -->
+	<key>AssociatedBundleIdentifiers</key>
+	<array>
+		<string>com.llcheesell.SleepToggle</string>
+	</array>
+</dict>
+</plist>

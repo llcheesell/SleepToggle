@@ -1,0 +1,18 @@
+.DS_Store
+
+# Xcode (Phase 2)
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcworkspace/xcuserdata/
+
+# 署名まわりを誤ってコミットしないための保険
+*.p12
+*.cer
+*.mobileprovision
+*.provisionprofile
+ExportOptions.plist
+
+# xcodegen が生成する
+SleepToggle.xcodeproj/

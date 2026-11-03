@@ -1,0 +1,11 @@
+# Sleep Toggle — pmset で clamshell sleep を切り替えるためのパスワード免除。
+#
+# sudoers は Cmnd に引数が書かれている場合、引数の完全一致を要求する。
+# ワイルドカードを使っていないため、下の 2 行と一字一句同じ呼び出し以外は許可されない。
+# （`pmset -a disablesleep 1 -something` のような引数追加も弾かれる）
+#
+# scripts/install-sudoers.sh が @USER@ を実行ユーザー名に置換してインストールする。
+# 手で置く場合は root:wheel / 0440 にし、必ず先に `visudo -cf` で検証すること。
+
+@USER@ ALL=(root) NOPASSWD: /usr/bin/pmset -a disablesleep 0
+@USER@ ALL=(root) NOPASSWD: /usr/bin/pmset -a disablesleep 1

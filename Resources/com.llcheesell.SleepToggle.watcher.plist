@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.llcheesell.SleepToggle.watcher</string>
+
+	<!-- 音はユーザーセッションでしか鳴らせないため、デーモンではなくエージェント。 -->
+	<key>BundleProgram</key>
+	<string>Contents/MacOS/SleepToggleWatcher</string>
+
+	<key>RunAtLoad</key>
+	<true/>
+	<key>KeepAlive</key>
+	<true/>
+
+	<key>AssociatedBundleIdentifiers</key>
+	<array>
+		<string>com.llcheesell.SleepToggle</string>
+	</array>
+</dict>
+</plist>
